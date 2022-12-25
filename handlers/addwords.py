@@ -5,6 +5,7 @@ from aiogram import types, Dispatcher
 from database import sqlite_db
 import mainbot
 
+
 def wordsToTurple(id, words):
     totalWords = []
     for i in range(0, len(words), 2):

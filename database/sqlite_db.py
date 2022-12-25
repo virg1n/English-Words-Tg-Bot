@@ -9,6 +9,7 @@ def sqlStart():
     # base.execute('CREATE TABLE IF NOT EXISTS users(user_id TEXT, word TEXT, translate TEXT)')
     base.execute('CREATE TABLE IF NOT EXISTS learned(user_id TEXT, word TEXT, translate TEXT)')
     base.execute('CREATE TABLE IF NOT EXISTS unlearned(user_id TEXT, word TEXT, translate TEXT)')
+    base.execute('CREATE TABLE IF NOT EXISTS addTranslatedWord(user_id TEXT, word TEXT, translate TEXT)')
     base.commit()
 
 async def sqlAddCommand(words):
@@ -87,4 +88,19 @@ async def sqlAddWordUnLearned(words):
 async def sqlAddWordLearned(words):
     for i in words:
         cur.execute('INSERT INTO learned VALUES(?, ?, ?)', tuple(i))
+    base.commit()
+
+async def sqlAddTranslatedWord(word):
+    cur.execute('INSERT INTO addTranslatedWord VALUES(?, ?, ?)', word)
+    base.commit()
+
+async def sqlUpdateTranslatedWord(word, translate, id):
+    cur.execute('UPDATE addTranslatedWord SET word="{}", translate="{}" WHERE user_id="{}"'.format(word, translate, id))
+    base.commit()
+
+async def getTranslatedWord(id):
+    return (cur.execute("SELECT * FROM addTranslatedWord WHERE user_id='{}'".format(id)).fetchall())
+
+async def sqlDeleteWordInTranslated(id):
+    cur.execute("DELETE FROM addTranslatedWord WHERE user_id=='{}' ".format( id))
     base.commit()
