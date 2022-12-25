@@ -36,8 +36,21 @@ async def sqlDeleteWordByWord(id, word):
     cur.execute("DELETE FROM unlearned WHERE word=='{}' AND user_id='{}' ".format(word, id))
     base.commit()
 
+async def sqlDeleteWordByWordInLearned(id, word):
+    cur.execute("DELETE FROM learned WHERE word=='{}' AND user_id='{}' ".format(word, id))
+    base.commit()
+
 async def getWordByWord(id, word):
     return (cur.execute("SELECT * FROM unlearned WHERE word=='{}' AND user_id='{}'".format(word, id)).fetchall())
+
+async def getWordByTranslate(id, word):
+    return (cur.execute("SELECT * FROM unlearned WHERE translate=='{}' AND user_id='{}'".format(word, id)).fetchall())
+
+async def getLearnedWordByWord(id, word):
+    return (cur.execute("SELECT * FROM learned WHERE word=='{}' AND user_id='{}'".format(word, id)).fetchall())
+
+async def getLearnedWordByTranslate(id, word):
+    return (cur.execute("SELECT * FROM learned WHERE translate=='{}' AND user_id='{}'".format(word, id)).fetchall())
 
 async def sqlToLearned(word):
     cur.execute('INSERT INTO learned VALUES(?, ?, ?)', tuple(word[0]))
@@ -46,6 +59,21 @@ async def sqlToLearned(word):
 async def sqlToLearnedById(word):
     cur.execute('INSERT INTO learned VALUES(?, ?, ?)', tuple(word))
     base.commit()
+
+async def sqlToUnLearned(word):
+    cur.execute('INSERT INTO unlearned VALUES(?, ?, ?)', tuple(word[0]))
+    base.commit()
+
+async def sqlToUnLearnedById(word):
+    cur.execute('INSERT INTO unlearned VALUES(?, ?, ?)', tuple(word))
+    base.commit()
+
+async def sqlDeleteLearnedWordByWord(id, word):
+    cur.execute("DELETE FROM learned WHERE word=='{}' AND user_id='{}' ".format(word, id))
+    base.commit()
+
+async def getLearnedWordByWord(id, word):
+    return (cur.execute("SELECT * FROM learned WHERE word=='{}' AND user_id='{}'".format(word, id)).fetchall())
 
 async def sqlDeleteWordByNumber(id, number):
     cur.execute("DELETE FROM unlearned WHERE word=='{}' AND user_id='{}' ".format(number, id))
