@@ -80,21 +80,27 @@ async def DeleteWords(message: types.Message, state: FSMContext):
                     data['DeletedWord'] = message.text
             else:
                 try:
+                    arr = message.text.split(',')
+                    for i in range(len(arr)):
+                        arr[i] = int(arr[i])
+                    arr.sort()
+                    print(arr)
                     words = await sqlite_db.sqlGetUnLearnedWords(message.from_user.id)
-                    word = words[int(message.text)]
-                    wordTuple = (message.from_user.id, word[1], word[2])
-                    TherIsWord = bool(
-                        await sqlite_db.getWordByWord(id=message.from_user.id, word=str(wordTuple[1]).capitalize())
-                    )
-                    if TherIsWord:
-                        await sqlite_db.sqlDeleteWordByWord(id=message.from_user.id, word=str(wordTuple[1]).capitalize())
-                        await message.reply("Deleted by id!")
+                    k = 0
+                    for i in arr:
+                        word = words[int(i)]
+                        wordTuple = (message.from_user.id, word[1], word[2])
+                        TherIsWord = bool(
+                            await sqlite_db.getWordByWord(id=message.from_user.id, word=str(wordTuple[1].capitalize()))
+                        )
+                        if TherIsWord:
+                            await sqlite_db.sqlDeleteWordByWord(id=message.from_user.id, word=str(wordTuple[1]).capitalize())
+                        k += 1
+                    await message.reply("Deleted by id!")
                 except:
                     word = await sqlite_db.getWordByTranslate(id=message.from_user.id, word=(str(message.text)).capitalize())
-                    print(word)
                     TherIsWord = bool(
                         await sqlite_db.getWordByWord(id=message.from_user.id, word=(str(word[0][1]).capitalize())))
-                    print(TherIsWord)
                     if TherIsWord:
                         await sqlite_db.sqlDeleteWordByWord(id=message.from_user.id, word=str(word[0][1]).capitalize())
                         await message.reply("Deleted by Translate!")
@@ -131,11 +137,9 @@ async def MovingToLearned(message: types.Message, state: FSMContext):
                     words = await sqlite_db.sqlGetUnLearnedWords(message.from_user.id)
                     word = words[int(message.text)]
                     wordTuple = (message.from_user.id, word[1], word[2])
-                    print(wordTuple)
                     TherIsWord = bool(
                         await sqlite_db.getWordByWord(id=message.from_user.id, word=str(wordTuple[1]).capitalize())
                     )
-                    print(TherIsWord)
                     if TherIsWord:
                         await sqlite_db.sqlDeleteWordByWord(id=message.from_user.id,
                                                             word=str(wordTuple[1]).capitalize())
@@ -248,20 +252,26 @@ async def DeleteWordsInLearned(message: types.Message, state: FSMContext):
             else:
                 word = await sqlite_db.getLearnedWordByTranslate(id=message.from_user.id, word=str(message.text).capitalize())
                 if bool(word):
-                    print(word)
                     await sqlite_db.sqlDeleteWordByWordInLearned(id=message.from_user.id,
                                                                  word=str(word[0][1]).capitalize())
                     await message.reply("Deleted By Translate!")
                 else:
                     try:
+                        arr = message.text.split(',')
+                        for i in range(len(arr)):
+                            arr[i] = int(arr[i])
+                        arr.sort()
+                        print(arr)
                         words = await sqlite_db.sqlGetLearnedWords(message.from_user.id)
-                        word = words[int(message.text)]
-                        if bool(word):
-                            await sqlite_db.sqlDeleteWordByWordInLearned(id=message.from_user.id,
-                                                                         word=str(word[1]).capitalize())
-                            await message.reply("Deleted By Id!")
-                        else:
-                            await message.reply("No Some Word \nFor stop write '/end'")
+                        k = 0
+                        for i in arr:
+                            word = words[int(i)]
+                            if bool(word):
+                                await sqlite_db.sqlDeleteWordByWordInLearned(id=message.from_user.id,
+                                                                             word=str(word[1]).capitalize())
+                                await message.reply("Deleted By Id!")
+                            else:
+                                await message.reply("No Some Word \nFor stop write '/end'")
                     except:
                         await message.reply("No Some Word \nFor stop write '/end'")
         except:

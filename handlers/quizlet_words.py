@@ -25,11 +25,9 @@ async def AddingQuizletToUnlearned(message: types.Message, state: FSMContext):
     if(message.text != "/end" and message.text != "/learned" and message.text != "/unlearned"):
         try:
             link = message.text
-            print(link)
             words = parser.parseQuizlet(url=link)
             for i in range(0, len(words), 2):
                 wordsTuple = wordsToTurple(id=message.from_user.id, words=words)
-            print(wordsTuple)
             for i in wordsTuple:
                 await sqlite_db.sqlToUnLearned([i])
             await message.reply("Done!")

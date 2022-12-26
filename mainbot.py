@@ -40,11 +40,14 @@ async def getAllLearnedWords(message: types.Message):
         await bot.send_message(message.from_user.id, i)
 
 @dp.message_handler(commands=['addThis'])
-async def getAllLearnedWords(message: types.Message):
-    lastTranslatedWord = await sqlite_db.getTranslatedWord(message.from_user.id)
-    await sqlite_db.sqlToUnLearned([(message.from_user.id, lastTranslatedWord[0][1], lastTranslatedWord[0][2])])
-    await sqlite_db.sqlDeleteWordInTranslated(message.from_user.id)
-    await bot.send_message(message.from_user.id, "Added")
+async def TranslatedToLearned(message: types.Message):
+    try:
+        lastTranslatedWord = await sqlite_db.getTranslatedWord(message.from_user.id)
+        await sqlite_db.sqlToUnLearned([(message.from_user.id, lastTranslatedWord[0][1], lastTranslatedWord[0][2])])
+        await sqlite_db.sqlDeleteWordInTranslated(message.from_user.id)
+        await bot.send_message(message.from_user.id, "Added")
+    except:
+        print('Error')
 
 # @dp.message_handler()
 async def echo_message(message: types.Message, state: FSMContext):
@@ -53,11 +56,11 @@ async def echo_message(message: types.Message, state: FSMContext):
         await bot.send_message(message.from_user.id, translate.text)
         lastTranslatedWord = await sqlite_db.getTranslatedWord(message.from_user.id)
         if (detector.detect(message.text).lang == "en"):
-            word = message.text
-            translatedWord = translate.text
+            word = message.text.capitalize()
+            translatedWord = translate.text.capitalize()
         else:
-            word = translate.text
-            translatedWord = message.text
+            word = translate.text.capitalize()
+            translatedWord = message.text.capitalize()
         if (lastTranslatedWord):
             await sqlite_db.sqlUpdateTranslatedWord(id=message.from_user.id, word=word, translate=translatedWord)
         else:
