@@ -33,6 +33,7 @@ class FSMToUnLearned(StatesGroup):
 class FSMToUnLearnedById(StatesGroup):
     UnLearnedWordById = State()
 
+
 async def startAddingNewWords(message: types.Message):
     await FSMNewWords.newWord.set()
     await message.reply('write Word(s)')
@@ -43,6 +44,7 @@ async def addNewWords(message: types.Message, state: FSMContext):
         try:
             words = []
             words = message.text.replace(';','-').replace(':','-').replace(',','-').replace('\n','-').split('-')
+            print(words)
             if (len(words) % 2 == 0):
                 turpleWords = wordsToTurple(id=message.from_user.id, words=words)
                 await sqlite_db.sqlAddWordUnLearned(turpleWords)

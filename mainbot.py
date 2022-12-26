@@ -8,7 +8,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from googletrans import Translator
 
 from database import sqlite_db
-from handlers import addwords, translator
+from handlers import addwords, translator, quizlet_words
 
 storage = MemoryStorage()
 TOKEN = '5912456401:AAGN2IcEcogZa4CF99IJhpD1bAkFtRNpaKg'
@@ -42,7 +42,6 @@ async def getAllLearnedWords(message: types.Message):
 @dp.message_handler(commands=['addThis'])
 async def getAllLearnedWords(message: types.Message):
     lastTranslatedWord = await sqlite_db.getTranslatedWord(message.from_user.id)
-    print(lastTranslatedWord[0][0])
     await sqlite_db.sqlToUnLearned([(message.from_user.id, lastTranslatedWord[0][1], lastTranslatedWord[0][2])])
     await sqlite_db.sqlDeleteWordInTranslated(message.from_user.id)
     await bot.send_message(message.from_user.id, "Added")
@@ -68,6 +67,7 @@ async def echo_message(message: types.Message, state: FSMContext):
 
 if __name__ == '__main__':
     addwords.reister_handlers_newWords(dp)
+    quizlet_words.reister_handlers_newWords(dp)
     dp.register_message_handler(echo_message)
     executor.start_polling(dp, skip_updates=True)
 
