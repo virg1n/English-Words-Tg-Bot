@@ -1,9 +1,12 @@
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram import types, Dispatcher
+from aiogram.types import ReplyKeyboardRemove
 
 from database import sqlite_db
 import mainbot
+
+from handlers.keyboardd import kb_main, kb_start
 
 
 def wordsToTurple(id, words):
@@ -36,7 +39,7 @@ class FSMToUnLearnedById(StatesGroup):
 
 async def startAddingNewWords(message: types.Message):
     await FSMNewWords.newWord.set()
-    await message.reply('write Word(s)')
+    await message.reply('write Word(s)',reply_markup=kb_main)
 
 
 async def addNewWords(message: types.Message, state: FSMContext):
@@ -44,7 +47,6 @@ async def addNewWords(message: types.Message, state: FSMContext):
         try:
             words = []
             words = message.text.replace(';','-').replace(':','-').replace(',','-').replace('\n','-').split('-')
-            print(words)
             if (len(words) % 2 == 0):
                 turpleWords = wordsToTurple(id=message.from_user.id, words=words)
                 await sqlite_db.sqlAddWordUnLearned(turpleWords)
@@ -58,7 +60,7 @@ async def addNewWords(message: types.Message, state: FSMContext):
     else:
         await state.finish()
         if (message.text == "/end"):
-            await message.reply("Ended Successfully")
+            await message.reply("Ended Successfully", reply_markup=kb_start)
         elif (message.text == "/learned"):
             await mainbot.getAllLearnedWords(message)
         elif (message.text == "/unlearned"):
@@ -67,7 +69,7 @@ async def addNewWords(message: types.Message, state: FSMContext):
 
 async def startDeletingWords(message: types.Message):
     await FSMDeletedWords.DeletedWord.set()
-    await message.reply('write numbers')
+    await message.reply('write numbers', reply_markup=kb_main)
 
 async def DeleteWords(message: types.Message, state: FSMContext):
     if(message.text != "/end" and message.text != "/learned" and message.text != "/unlearned"):
@@ -84,7 +86,6 @@ async def DeleteWords(message: types.Message, state: FSMContext):
                     for i in range(len(arr)):
                         arr[i] = int(arr[i])
                     arr.sort()
-                    print(arr)
                     words = await sqlite_db.sqlGetUnLearnedWords(message.from_user.id)
                     k = 0
                     for i in arr:
@@ -105,9 +106,21 @@ async def DeleteWords(message: types.Message, state: FSMContext):
                         await sqlite_db.sqlDeleteWordByWord(id=message.from_user.id, word=str(word[0][1]).capitalize())
                         await message.reply("Deleted by Translate!")
                     else:
-                        await message.reply("No such word")
+                        aasd = 1/0
         except:
-            await message.reply("No Some Word \n For stop write '/end'")
+            if '-' in message.text:
+                try:
+                    numberOfWords = message.text.split('-')
+                    words = await sqlite_db.sqlGetUnLearnedWords(message.from_user.id)
+                    for i in range(int(numberOfWords[1]) - int(numberOfWords[0]) + 1):
+                        word = words[int(numberOfWords[0]) + i]
+                        await sqlite_db.sqlDeleteWordByWord(id=message.from_user.id,
+                                                                     word=str(word[1]).capitalize())
+                    await message.reply(f"Deleted from {numberOfWords[0]} to {numberOfWords[1]}")
+                except:
+                    await message.reply("No Some Word \nFor stop write '/end'")
+            else:
+                await message.reply("No Some Word \nFor stop write '/end'")
     else:
         await state.finish()
         if (message.text == "/end"):
@@ -120,7 +133,7 @@ async def DeleteWords(message: types.Message, state: FSMContext):
 async def startMoveToLearned(message: types.Message):
     await FSMToLearned.LearnedWord.set()
     await message.reply(await sqlite_db.sqlGetUnLearnedWords(message.from_user.id))
-    await message.reply('write Word')
+    await message.reply('write Word', reply_markup=kb_main)
 
 async def MovingToLearned(message: types.Message, state: FSMContext):
     if(message.text != "/end" and message.text != "/learned" and message.text != "/unlearned"):
@@ -135,16 +148,22 @@ async def MovingToLearned(message: types.Message, state: FSMContext):
             try:
                 try:
                     words = await sqlite_db.sqlGetUnLearnedWords(message.from_user.id)
-                    word = words[int(message.text)]
-                    wordTuple = (message.from_user.id, word[1], word[2])
-                    TherIsWord = bool(
-                        await sqlite_db.getWordByWord(id=message.from_user.id, word=str(wordTuple[1]).capitalize())
-                    )
-                    if TherIsWord:
-                        await sqlite_db.sqlDeleteWordByWord(id=message.from_user.id,
-                                                            word=str(wordTuple[1]).capitalize())
-                        await sqlite_db.sqlToLearned([wordTuple])
-                        await message.reply("Moved by id!")
+                    arr = message.text.split(',')
+                    for i in range(len(arr)):
+                        arr[i] = int(arr[i])
+                    arr.sort()
+                    # words = await sqlite_db.sqlGetUnLearnedWords(message.from_user.id)
+                    for i in arr:
+                        word = words[int(i)]
+                        wordTuple = (message.from_user.id, word[1], word[2])
+                        TherIsWord = bool(
+                            await sqlite_db.getWordByWord(id=message.from_user.id, word=str(wordTuple[1]).capitalize())
+                        )
+                        if TherIsWord:
+                            await sqlite_db.sqlDeleteWordByWord(id=message.from_user.id,
+                                                                word=str(wordTuple[1]).capitalize())
+                            await sqlite_db.sqlToLearned([wordTuple])
+                    await message.reply("Moved by id!")
                 except:
                     word = await sqlite_db.getWordByTranslate(id=message.from_user.id, word=str(message.text).capitalize())
                     await sqlite_db.sqlDeleteWordByWord(id=message.from_user.id, word=str(word[0][1]).capitalize())
@@ -153,7 +172,23 @@ async def MovingToLearned(message: types.Message, state: FSMContext):
                     async with state.proxy() as data:
                         data['LearnedWord'] = message.text
             except:
-                await message.reply("No Some Word \nFor stop write '/end'")
+                if '-' in message.text:
+                    try:
+                        numberOfWords = message.text.split('-')
+                        words = await sqlite_db.sqlGetUnLearnedWords(message.from_user.id)
+                        for i in range(int(numberOfWords[1]) - int(numberOfWords[0]) + 1):
+                            word = words[int(numberOfWords[0]) + i]
+                            # word[0] = message.from_user.id
+                            wordTuple = (message.from_user.id, word[1], word[2])
+                            print(word)
+                            await sqlite_db.sqlDeleteWordByWord(id=message.from_user.id,
+                                                                         word=str(word[1]).capitalize())
+                            await sqlite_db.sqlToLearned([wordTuple])
+                        await message.reply(f"Moved from {numberOfWords[0]} to {numberOfWords[1]}")
+                    except:
+                        await message.reply("No Some Word \nFor stop write '/end'")
+                else:
+                    await message.reply("No Some Word \nFor stop write '/end'")
     else:
         await state.finish()
         if (message.text == "/end"):
@@ -197,7 +232,7 @@ async def MovingToLearned(message: types.Message, state: FSMContext):
 async def startMoveToUnLearnedById(message: types.Message):
     await FSMToUnLearnedById.UnLearnedWordById.set()
     await message.reply(await sqlite_db.sqlGetLearnedWords(message.from_user.id))
-    await message.reply('write number')
+    await message.reply('write number', reply_markup=kb_main)
 
 async def MovingToUnLearnedById(message: types.Message, state: FSMContext):
     if(message.text != "/end" and message.text != "/learned" and message.text != "/unlearned"):
@@ -221,7 +256,21 @@ async def MovingToUnLearnedById(message: types.Message, state: FSMContext):
                 async with state.proxy() as data:
                     data['LearnedWordById'] = message.text
             except:
-                await message.reply("No Some Number \n For stop write '/end' ")
+                if '-' in message.text:
+                    try:
+                        numberOfWords = message.text.split('-')
+                        words = await sqlite_db.sqlGetLearnedWords(message.from_user.id)
+                        for i in range(int(numberOfWords[1]) - int(numberOfWords[0]) + 1):
+                            word = words[int(numberOfWords[0]) + i]
+                            wordTuple = (message.from_user.id, word[1], word[2])
+                            await sqlite_db.sqlDeleteLearnedWordByWord(id=message.from_user.id,
+                                                                         word=str(word[1]).capitalize())
+                            await sqlite_db.sqlToUnLearnedById(wordTuple)
+                        await message.reply(f"Moved from {numberOfWords[0]} to {numberOfWords[1]}")
+                    except:
+                        await message.reply("No Some Word \nFor stop write '/end'")
+                else:
+                    await message.reply("No Some Word \nFor stop write '/end'")
     else:
         await state.finish()
         if (message.text == "/end"):
@@ -236,7 +285,7 @@ async def MovingToUnLearnedById(message: types.Message, state: FSMContext):
 
 async def startDeletingWordsInLearned(message: types.Message):
     await FSMDeletedWordsInLearned.DeletedWordInLearned.set()
-    await message.reply('write word which you want to delete')
+    await message.reply('write word which you want to delete', reply_markup=kb_main)
 
 
 async def DeleteWordsInLearned(message: types.Message, state: FSMContext):
@@ -261,21 +310,41 @@ async def DeleteWordsInLearned(message: types.Message, state: FSMContext):
                         for i in range(len(arr)):
                             arr[i] = int(arr[i])
                         arr.sort()
-                        print(arr)
                         words = await sqlite_db.sqlGetLearnedWords(message.from_user.id)
                         k = 0
                         for i in arr:
                             word = words[int(i)]
-                            if bool(word):
-                                await sqlite_db.sqlDeleteWordByWordInLearned(id=message.from_user.id,
+                            await sqlite_db.sqlDeleteWordByWordInLearned(id=message.from_user.id,
                                                                              word=str(word[1]).capitalize())
-                                await message.reply("Deleted By Id!")
-                            else:
-                                await message.reply("No Some Word \nFor stop write '/end'")
+                        await message.reply("Deleted By Id!")
                     except:
-                        await message.reply("No Some Word \nFor stop write '/end'")
+                        if '-' in message.text:
+                            try:
+                                numberOfWords = message.text.split('-')
+                                words = await sqlite_db.sqlGetLearnedWords(message.from_user.id)
+                                for i in range(int(numberOfWords[1])-int(numberOfWords[0]) + 1):
+                                    word = words[int(numberOfWords[0]) + i]
+                                    await sqlite_db.sqlDeleteWordByWordInLearned(id=message.from_user.id,
+                                                                                 word=str(word[1]).capitalize())
+                                await message.reply(f"Deleted from {numberOfWords[0]} to {numberOfWords[1]}")
+                            except:
+                                await message.reply("No Some Word \nFor stop write '/end'")
+                        else:
+                            await message.reply("No Some Word \nFor stop write '/end'")
         except:
-            await message.reply("No Some Word \nFor stop write '/end'")
+            if '-' in message.text:
+                try:
+                    numberOfWords = message.text.split('-')
+                    words = await sqlite_db.sqlGetLearnedWords(message.from_user.id)
+                    for i in range(int(numberOfWords[1]) - int(numberOfWords[0]) + 1):
+                        word = words[int(numberOfWords[0]) + i]
+                        await sqlite_db.sqlDeleteWordByWordInLearned(id=message.from_user.id,
+                                                                     word=str(word[1]).capitalize())
+                    await message.reply(f"Deleted from {numberOfWords[0]} to {numberOfWords[1]}")
+                except:
+                    await message.reply("No Some Word \nFor stop write '/end'")
+            else:
+                await message.reply("No Some Word \nFor stop write '/end'")
     else:
         await state.finish()
         if (message.text == "/end"):

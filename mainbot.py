@@ -4,11 +4,13 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram import types, Dispatcher
 from aiogram.utils import executor
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.types import ReplyKeyboardRemove
 
 from googletrans import Translator
 
 from database import sqlite_db
 from handlers import addwords, translator, quizlet_words
+from handlers.keyboardd import kb_start, kb_learned, kb_unlearned
 
 storage = MemoryStorage()
 TOKEN = '5912456401:AAGN2IcEcogZa4CF99IJhpD1bAkFtRNpaKg'
@@ -26,18 +28,23 @@ def wordsToTurple(id, words):
         totalWords.append((id, str(words[i]).capitalize(), str(words[i+1]).capitalize()))
     return (totalWords)
 
+@dp.message_handler(commands=['start'])
+async def getAllUnLearnedWords(message: types.Message):
+    await bot.send_message(message.from_user.id, "Hello!", reply_markup=kb_start)
+
 @dp.message_handler(commands=['unlearned'])
 async def getAllUnLearnedWords(message: types.Message):
     words = await sqlite_db.sqlGetUnLearnedWords(message.from_user.id)
-    for i in words:
-        await bot.send_message(message.from_user.id, i)
+    # for i in words:
+    #     await bot.send_message(message.from_user.id, i)
+    await bot.send_message(message.from_user.id, words, reply_markup=kb_unlearned) #, reply_markup=ReplyKeyboardRemove()
 
 @dp.message_handler(commands=['learned'])
 async def getAllLearnedWords(message: types.Message):
     words = await sqlite_db.sqlGetLearnedWords(message.from_user.id)
-    print(words)
-    for i in words:
-        await bot.send_message(message.from_user.id, i)
+    # for i in words:
+    #     await bot.send_message(message.from_user.id, i)
+    await bot.send_message(message.from_user.id, words, reply_markup=kb_learned)
 
 @dp.message_handler(commands=['addThis'])
 async def TranslatedToLearned(message: types.Message):
@@ -45,7 +52,7 @@ async def TranslatedToLearned(message: types.Message):
         lastTranslatedWord = await sqlite_db.getTranslatedWord(message.from_user.id)
         await sqlite_db.sqlToUnLearned([(message.from_user.id, lastTranslatedWord[0][1], lastTranslatedWord[0][2])])
         await sqlite_db.sqlDeleteWordInTranslated(message.from_user.id)
-        await bot.send_message(message.from_user.id, "Added")
+        await bot.send_message(message.from_user.id, "Added", reply_markup=kb_start)
     except:
         print('Error')
 

@@ -6,6 +6,8 @@ from database import sqlite_db
 import mainbot
 
 from handlers import parser
+from handlers.keyboardd import kb_main, kb_start
+
 
 def wordsToTurple(id, words):
     totalWords = []
@@ -19,7 +21,7 @@ class FSMQuizletToUnlearned(StatesGroup):
 
 async def startAddingQuizlet(message: types.Message):
     await FSMQuizletToUnlearned.QuizletWords.set()
-    await message.reply('give me a link of a quizlet')
+    await message.reply('give me a link of a quizlet', reply_markup=kb_main)
 
 async def AddingQuizletToUnlearned(message: types.Message, state: FSMContext):
     if(message.text != "/end" and message.text != "/learned" and message.text != "/unlearned"):
@@ -36,7 +38,7 @@ async def AddingQuizletToUnlearned(message: types.Message, state: FSMContext):
     else:
         await state.finish()
         if (message.text == "/end"):
-            await message.reply("Ended Successfully")
+            await message.reply("Ended Successfully", reply_markup=kb_start)
         elif (message.text == "/learned"):
             await mainbot.getAllLearnedWords(message)
         elif (message.text == "/unlearned"):
