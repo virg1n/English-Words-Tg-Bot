@@ -13,7 +13,7 @@ from handlers import addwords, translator, quizlet_words
 from handlers.keyboardd import kb_start, kb_learned, kb_unlearned
 
 storage = MemoryStorage()
-TOKEN = '5912456401:AAGN2IcEcogZa4CF99IJhpD1bAkFtRNpaKg'
+TOKEN = ''
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot, storage=storage)
